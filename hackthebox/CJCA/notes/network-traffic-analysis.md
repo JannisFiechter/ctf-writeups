@@ -156,3 +156,61 @@ Post-capture processing: Capture everything first, then filter afterward; uses m
 | tcp.port == x                   | Show traffic for a specific TCP port.                                                      |
 | tcp.port / udp.port != x        | Show traffic for all ports except the specified one.                                       |
 | and / or / not                  | Logical operators: AND combines, OR matches either, NOT excludes.                         |
+
+## Follow TCP Stream
+- GUI: Rightclick -> Follow -> Follow TCP Stream
+- Filter: tcp.stream eq #
+
+## Extracting Data and Files From a Capture
+- GUI
+    - File -> Export Object
+    - HTTP -> choose File -> Save
+- From Capture
+    - stop your capture.
+    - Select the File radial → Export → , then select the protocol format to extract from.
+    - (DICOM, HTTP, SMB, etc.)
+- FTP
+    - filter: ftp.request.command
+        - Lists Username & Passwords
+    - filter: ftp-data
+        - Lists Files
+    
+### FTP Workflow
+- Identify any FTP traffic using the ftp display filter.
+- Look at the command controls sent between the server and hosts to determine if anything was transferred and who did so with the ftp.request.command filter.
+- Choose a file, then filter for ftp-data. Select a packet that corresponds with our file of interest and follow the TCP stream that correlates to it.
+- Once done, Change "Show and save data as" to "Raw" and save the content as the original file name.
+- Validate the extraction by checking the file type.
+
+### RDP Decryption Manual
+
+To view RDP traffic in cleartext, Wireshark needs the **server’s private RSA key**. Without this key, the TLS traffic remains encrypted.
+
+---
+
+## **Add the RDP Key to Wireshark**
+
+1. Open **Wireshark → Edit → Preferences**
+2. Navigate to **Protocols → TLS**
+3. Under **RSA Keys List**, click **Edit (+)** to add a new key
+4. Fill the fields as follows:
+
+| Field          | Value                     |
+| -------------- | ------------------------- |
+| **IP Address** | `10.129.43.29`            |
+| **Port**       | `3389`                    |
+| **Protocol**   | `tpkt` *(or leave blank)* |
+| **Key File**   | Path to your `server.key` |
+
+5. Click **OK**, then **Save**
+6. Reload your pcap file in Wireshark
+
+---
+
+After this, filter on RDP traffic:
+
+```wireshark
+rdp || tcp.port == 3389
+```
+
+You should now see **decrypted RDP packets** and can follow streams for analysis.
